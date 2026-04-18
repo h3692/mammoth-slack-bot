@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mammoth — ESG Scouting Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Playfair+Display:wght@500;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            snow: { DEFAULT: '#FFFFFF', 100: '#F4F4F5', 200: '#E3E1DF', 300: '#767676' },
+            night: { DEFAULT: '#1B2231', 100: '#D1D3D6', 200: '#8D9097', 300: '#010203' },
+            sea: '#262D3B',
+            gum: { DEFAULT: '#F978C2', 100: '#FEE4F3', 200: '#FCBBE1' },
+            bay: { DEFAULT: '#1D60D8', 50: '#F4F7FD', 100: '#E8EFFB', 200: '#8DAFEB' },
+            sun: { DEFAULT: '#F8CE46', 100: '#FCF0C7', 200: '#FBE6A2' },
+            success: { DEFAULT: '#038557', 100: '#E1F2EC' },
+            error: { DEFAULT: '#DE3232', 100: '#FBE6E6' },
+          },
+          fontFamily: {
+            primary: ['Lato', 'sans-serif'],
+            secondary: ['Playfair Display', 'serif'],
+          },
+          maxWidth: {
+            container: '1296px',
+          },
+          borderRadius: {
+            card: '1.5rem',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Lato', sans-serif; background: #F4F7FD; margin: 0; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #E3E1DF; border-radius: 3px; }
+
+    /* Card entrance animation */
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .card-enter { animation: cardIn 0.4s ease-out forwards; }
+
+    /* Pulse for new high-value badge */
+    @keyframes badgePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+    .badge-pulse { animation: badgePulse 0.6s ease-in-out 2; }
+
+    /* Stat counter animation */
+    @keyframes countUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .stat-num { animation: countUp 0.35s ease-out forwards; }
+
+    /* Toast slide in */
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(100%); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(100%); }
+    }
+    .toast-enter { animation: toastIn 0.3s ease-out forwards; }
+    .toast-exit { animation: toastOut 0.3s ease-in forwards; }
+
+    /* Filter pill active transition */
+    .filter-pill { transition: all 0.25s ease; }
+
+    /* Button hover lift */
+    .btn-lift { transition: all 0.3s ease; }
+    .btn-lift:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(27, 34, 49, 0.15); }
+
+    /* Summary expand */
+    .summary-box { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+    .summary-box.open { max-height: 300px; }
+
+    /* Skeleton loader */
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #E3E1DF 25%, #F4F4F5 50%, #E3E1DF 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+    }
+
+    /* Empty state */
+    .empty-state { opacity: 0; animation: cardIn 0.5s ease-out 0.2s forwards; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+  <!-- Navigation -->
+  <nav class="sticky top-0 z-40 bg-night shadow-lg">
+    <div class="max-w-container mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between h-16">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="14" fill="#F8CE46"/>
+            <path d="M10 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#1B2231" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="12" cy="13" r="1.5" fill="#1B2231"/>
+            <circle cx="20" cy="13" r="1.5" fill="#1B2231"/>
+            <path d="M8 10c0-1 .5-3 3-4M24 10c0-1-.5-3-3-4" stroke="#1B2231" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span class="font-secondary font-bold text-xl text-snow tracking-tight">mammoth</span>
+        </div>
+        <div class="hidden sm:block h-6 w-px bg-snow/20 mx-2"></div>
+        <span class="hidden sm:block text-snow-200 text-sm font-primary">ESG Scouting Dashboard</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="triggerDigest()" class="btn-lift bg-sun text-night font-bold text-sm px-4 py-2 rounded-md hover:bg-sun-200 transition-colors duration-300 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <span class="hidden sm:inline">Send Weekly Digest</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Stats Panel -->
+  <section class="bg-bay-50 border-b border-snow-200">
+    <div class="max-w-container mx-auto px-4 sm:px-6 lg:px-12 py-8">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Submissions -->
+        <div class="bg-snow rounded-card p-6 shadow-sm border-t-4 border-bay relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-20 h-20 bg-bay-100 rounded-bl-full opacity-50"></div>
+          <div class="relative">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="w-5 h-5 text-bay" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+              <span class="text-xs text-snow-300 font-bold uppercase tracking-wider">Submissions</span>
+            </div>
+            <div id="stat-total" class="text-3xl font-secondary font-bold text-night stat-num">0</div>
+          </div>
+        </div>
+        <!-- Validated -->
+        <div class="bg-snow rounded-card p-6 shadow-sm border-t-4 border-sun relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-20 h-20 bg-sun-100 rounded-bl-full opacity-50"></div>
+          <div class="relative">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="w-5 h-5 text-sun" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <span class="text-xs text-snow-300 font-bold uppercase tracking-wider">Validated</span>
+            </div>
+            <div id="stat-validated" class="text-3xl font-secondary font-bold text-night stat-num">0</div>
+          </div>
+        </div>
+        <!-- Anonymous Reports -->
+        <div class="bg-snow rounded-card p-6 shadow-sm border-t-4 border-gum relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-20 h-20 bg-gum-100 rounded-bl-full opacity-50"></div>
+          <div class="relative">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="w-5 h-5 text-gum" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              <span class="text-xs text-snow-300 font-bold uppercase tracking-wider">Anonymous</span>
+            </div>
+            <div id="stat-anonymous" class="text-3xl font-secondary font-bold text-night stat-num">0</div>
+          </div>
+        </div>
+        <!-- Points Awarded -->
+        <div class="bg-snow rounded-card p-6 shadow-sm border-t-4 border-success relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-20 h-20 bg-success-100 rounded-bl-full opacity-50"></div>
+          <div class="relative">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span class="text-xs text-snow-300 font-bold uppercase tracking-wider">Points</span>
+            </div>
+            <div id="stat-points" class="text-3xl font-secondary font-bold text-night stat-num">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter Bar -->
+  <section class="bg-snow border-b border-snow-200 sticky top-16 z-30">
+    <div class="max-w-container mx-auto px-4 sm:px-6 lg:px-12 py-4 flex flex-wrap gap-2">
+      <button onclick="setFilter('all')" data-filter="all" class="filter-pill active-filter px-5 py-2 rounded-full text-sm font-bold bg-night text-snow">All</button>
+      <button onclick="setFilter('high')" data-filter="high" class="filter-pill px-5 py-2 rounded-full text-sm font-bold bg-snow-100 text-snow-300 hover:bg-sun-100 hover:text-night">High Engagement</button>
+      <button onclick="setFilter('anonymous')" data-filter="anonymous" class="filter-pill px-5 py-2 rounded-full text-sm font-bold bg-snow-100 text-snow-300 hover:bg-gum-100 hover:text-night">Anonymous Reports</button>
+      <button onclick="setFilter('url')" data-filter="url" class="filter-pill px-5 py-2 rounded-full text-sm font-bold bg-snow-100 text-snow-300 hover:bg-bay-100 hover:text-night">URLs</button>
+      <button onclick="setFilter('kudos')" data-filter="kudos" class="filter-pill px-5 py-2 rounded-full text-sm font-bold bg-snow-100 text-snow-300 hover:bg-success-100 hover:text-night">Kudos</button>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="max-w-container mx-auto px-4 sm:px-6 lg:px-12 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+      <!-- Triage Inbox (2/3 width) -->
+      <div class="lg:col-span-2">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-secondary font-bold text-2xl text-night">Triage Inbox</h2>
+          <span id="submission-count" class="text-sm text-snow-300 font-primary">0 submissions</span>
+        </div>
+
+        <!-- Loading skeleton -->
+        <div id="skeleton-loader" class="space-y-4">
+          <div class="bg-snow rounded-card p-8 shadow-sm"><div class="skeleton h-4 w-3/4 mb-3"></div><div class="skeleton h-4 w-1/2 mb-3"></div><div class="skeleton h-8 w-24"></div></div>
+          <div class="bg-snow rounded-card p-8 shadow-sm"><div class="skeleton h-4 w-2/3 mb-3"></div><div class="skeleton h-4 w-1/3 mb-3"></div><div class="skeleton h-8 w-24"></div></div>
+        </div>
+
+        <!-- Submissions list -->
+        <div id="submissions-list" class="space-y-4 hidden"></div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="hidden empty-state text-center py-16">
+          <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-bay-100 mb-6">
+            <svg class="w-10 h-10 text-bay" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+          </div>
+          <h3 class="font-secondary font-bold text-xl text-night mb-2">No submissions yet</h3>
+          <p class="text-snow-300 max-w-sm mx-auto">Tag <strong>@Mammoth</strong> in any Slack channel with an article, idea, or kudos to get started.</p>
+        </div>
+      </div>
+
+      <!-- Campaign Builder Sidebar (1/3 width) -->
+      <div>
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-secondary font-bold text-2xl text-night">Campaigns</h2>
+          <span id="campaign-count" class="text-sm text-snow-300 font-primary">0 saved</span>
+        </div>
+        <div id="campaigns-list" class="space-y-3"></div>
+        <div id="campaigns-empty" class="text-center py-10">
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-sun-100 mb-4">
+            <svg class="w-7 h-7 text-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          </div>
+          <p class="text-snow-300 text-sm">Save validated submissions<br>to build campaigns</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-night mt-12">
+    <div class="max-w-container mx-auto px-4 sm:px-6 lg:px-12 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="font-secondary font-bold text-snow text-sm">mammoth</span>
+        <span class="text-night-200 text-xs">·</span>
+        <span class="text-night-200 text-xs">Bottom-Up ESG Scouting Module</span>
+      </div>
+      <span class="text-night-200 text-xs">Demo Build — Interview Prototype</span>
+    </div>
+  </footer>
+
+  <script>
+    // --- State ---
+    const API = window.location.origin;
+    let currentFilter = 'all';
+    let knownIds = new Set();
+    let firstLoad = true;
+
+    // --- Type config ---
+    const TYPE_CONFIG = {
+      URL:              { label: 'Article',   bg: 'bg-bay-100',     text: 'text-bay',     icon: '🔗' },
+      IDEA:             { label: 'Idea',      bg: 'bg-sun-100',     text: 'text-night',   icon: '💡' },
+      KUDOS:            { label: 'Kudos',     bg: 'bg-success-100', text: 'text-success',  icon: '🙌' },
+      ANONYMOUS_REPORT: { label: 'Anonymous', bg: 'bg-gum-100',    text: 'text-gum',      icon: '🛡️' },
+    };
+
+    const STATUS_CONFIG = {
+      PENDING:           { label: 'Pending',   bg: 'bg-snow-100', text: 'text-snow-300' },
+      VALIDATED:         { label: 'Validated',  bg: 'bg-sun-100',  text: 'text-night' },
+      APPROVED:          { label: 'Approved',   bg: 'bg-success-100', text: 'text-success' },
+      DISMISSED:         { label: 'Dismissed',  bg: 'bg-error-100', text: 'text-error' },
+      SAVED_TO_CAMPAIGN: { label: 'Saved',      bg: 'bg-gum-100', text: 'text-gum' },
+    };
+
+    // --- Polling ---
+    async function fetchSubmissions() {
+      const params = new URLSearchParams();
+      if (currentFilter === 'high') params.set('is_high_value', 'true');
+      else if (currentFilter === 'anonymous') params.set('is_anonymous', 'true');
+      else if (currentFilter === 'url') params.set('type', 'URL');
+      else if (currentFilter === 'kudos') params.set('type', 'KUDOS');
+
+      try {
+        const res = await fetch(`${API}/api/submissions?${params}`);
+        const data = await res.json();
+        renderSubmissions(data);
+      } catch (e) { console.error('Fetch submissions failed:', e); }
+    }
+
+    async function fetchStats() {
+      try {
+        const res = await fetch(`${API}/api/stats`);
+        const data = await res.json();
+        renderStats(data);
+      } catch (e) { console.error('Fetch stats failed:', e); }
+    }
+
+    async function fetchCampaigns() {
+      try {
+        const res = await fetch(`${API}/api/campaigns`);
+        const data = await res.json();
+        renderCampaigns(data);
+      } catch (e) { console.error('Fetch campaigns failed:', e); }
+    }
+
+    function poll() {
+      fetchSubmissions();
+      fetchStats();
+      fetchCampaigns();
+    }
+
+    // --- Render Stats ---
+    function renderStats(data) {
+      animateNumber('stat-total', data.total_submissions);
+      animateNumber('stat-validated', data.validated_count);
+      animateNumber('stat-anonymous', data.anonymous_count);
+      animateNumber('stat-points', data.total_points_awarded);
+    }
+
+    function animateNumber(id, target) {
+      const el = document.getElementById(id);
+      const current = parseInt(el.textContent) || 0;
+      if (current === target) return;
+      el.textContent = target;
+      el.classList.remove('stat-num');
+      void el.offsetWidth; // trigger reflow
+      el.classList.add('stat-num');
+    }
+
+    // --- Render Submissions ---
+    function renderSubmissions(subs) {
+      const skeleton = document.getElementById('skeleton-loader');
+      const list = document.getElementById('submissions-list');
+      const empty = document.getElementById('empty-state');
+      const countEl = document.getElementById('submission-count');
+
+      skeleton.classList.add('hidden');
+
+      if (subs.length === 0) {
+        list.classList.add('hidden');
+        empty.classList.remove('hidden');
+        countEl.textContent = '0 submissions';
+        return;
+      }
+
+      empty.classList.add('hidden');
+      list.classList.remove('hidden');
+      countEl.textContent = `${subs.length} submission${subs.length !== 1 ? 's' : ''}`;
+
+      const newIds = new Set(subs.map(s => s.id));
+      const html = subs.map(sub => {
+        const isNew = !knownIds.has(sub.id) && !firstLoad;
+        const tc = TYPE_CONFIG[sub.type] || TYPE_CONFIG.IDEA;
+        const sc = STATUS_CONFIG[sub.status] || STATUS_CONFIG.PENDING;
+        const time = new Date(sub.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+        const summaryHtml = sub.summary && sub.summary.length > 0 ? `
+          <div class="mt-3">
+            <button onclick="toggleSummary('summary-${sub.id}')" class="text-xs text-bay font-bold hover:text-bay-200 transition-colors flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+              AI Summary
+            </button>
+            <div id="summary-${sub.id}" class="summary-box">
+              <div class="bg-bay-50 rounded-lg p-4 mt-2 text-sm text-night leading-relaxed space-y-1">
+                ${sub.summary.map(b => `<p>• ${escapeHtml(b)}</p>`).join('')}
+              </div>
+            </div>
+          </div>` : '';
+
+        const urlHtml = sub.url ? `<a href="${escapeHtml(sub.url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-sm text-bay hover:text-bay-200 underline decoration-gum-200 decoration-2 underline-offset-2 transition-colors mt-1">${escapeHtml(truncate(sub.url, 60))} <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>` : '';
+
+        const reactionDots = sub.reaction_count > 0 ? `
+          <div class="flex items-center gap-1.5">
+            <div class="flex -space-x-1">${Array.from({length: Math.min(sub.reaction_count, 5)}).map(() => `<div class="w-5 h-5 rounded-full bg-sun-100 border-2 border-snow flex items-center justify-center text-[10px]">👍</div>`).join('')}</div>
+            <span class="text-xs text-snow-300 font-bold">${sub.reaction_count} reaction${sub.reaction_count !== 1 ? 's' : ''}</span>
+          </div>` : '<span class="text-xs text-snow-300">No reactions yet</span>';
+
+        const actionButtons = [];
+        if (sub.status === 'VALIDATED' || sub.status === 'PENDING') {
+          actionButtons.push(`<button onclick="saveToCampaign('${sub.id}')" class="btn-lift bg-sun text-night font-bold text-xs px-4 py-2 rounded-md hover:bg-sun-200 transition-colors duration-300">Save to Campaign</button>`);
+        }
+        if (sub.status !== 'APPROVED' && sub.status !== 'SAVED_TO_CAMPAIGN') {
+          actionButtons.push(`<button onclick="updateStatus('${sub.id}', 'APPROVED')" class="btn-lift bg-success text-snow font-bold text-xs px-3 py-2 rounded-md hover:bg-success/90 transition-colors duration-300">Approve</button>`);
+        }
+        if (sub.status !== 'DISMISSED' && sub.status !== 'SAVED_TO_CAMPAIGN') {
+          actionButtons.push(`<button onclick="updateStatus('${sub.id}', 'DISMISSED')" class="btn-lift bg-error-100 text-error font-bold text-xs px-3 py-2 rounded-md border border-error/20 hover:bg-error hover:text-snow transition-colors duration-300">Dismiss</button>`);
+        }
+
+        return `
+          <div class="bg-snow rounded-card p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-300 relative ${isNew ? 'card-enter' : ''}">
+            ${sub.is_high_value ? `<div class="absolute top-4 right-4 badge-pulse"><span class="inline-flex items-center gap-1 bg-sun text-night text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">⭐ High Value</span></div>` : ''}
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+              <span class="inline-flex items-center gap-1 ${tc.bg} ${tc.text} text-xs font-bold px-3 py-1 rounded-full">${tc.icon} ${tc.label}</span>
+              <span class="inline-flex items-center ${sc.bg} ${sc.text} text-xs font-bold px-2.5 py-1 rounded-full">${sc.label}</span>
+              <span class="text-xs text-snow-300 ml-auto">${time}</span>
+            </div>
+            <p class="text-night text-base leading-relaxed mb-1">${escapeHtml(sub.text)}</p>
+            ${urlHtml}
+            ${summaryHtml}
+            <div class="flex flex-wrap items-center justify-between gap-4 mt-4 pt-4 border-t border-snow-200">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full ${sub.is_anonymous ? 'bg-gum-100' : 'bg-bay-100'} flex items-center justify-center text-sm font-bold ${sub.is_anonymous ? 'text-gum' : 'text-bay'}">${sub.is_anonymous ? '?' : sub.submitter_name.charAt(0).toUpperCase()}</div>
+                <div>
+                  <div class="text-sm font-bold text-night">${escapeHtml(sub.submitter_name)}</div>
+                  <div class="text-xs text-snow-300">${sub.points_awarded} pts earned</div>
+                </div>
+              </div>
+              ${reactionDots}
+            </div>
+            <div class="flex flex-wrap gap-2 mt-4">${actionButtons.join('')}</div>
+          </div>`;
+      }).join('');
+
+      list.innerHTML = html;
+      knownIds = newIds;
+      firstLoad = false;
+    }
+
+    // --- Render Campaigns ---
+    function renderCampaigns(campaigns) {
+      const list = document.getElementById('campaigns-list');
+      const empty = document.getElementById('campaigns-empty');
+      const countEl = document.getElementById('campaign-count');
+
+      countEl.textContent = `${campaigns.length} saved`;
+
+      if (campaigns.length === 0) {
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      empty.classList.add('hidden');
+      const tc = { URL: TYPE_CONFIG.URL, IDEA: TYPE_CONFIG.IDEA, KUDOS: TYPE_CONFIG.KUDOS, ANONYMOUS_REPORT: TYPE_CONFIG.ANONYMOUS_REPORT };
+
+      list.innerHTML = campaigns.map(c => {
+        const cfg = tc[c.source_type] || tc.IDEA;
+        const time = new Date(c.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric' });
+        return `
+          <div class="bg-snow rounded-xl p-5 shadow-sm border-l-4 border-sun hover:shadow-md transition-shadow duration-300">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="inline-flex items-center ${cfg.bg} ${cfg.text} text-[10px] font-bold px-2 py-0.5 rounded-full">${cfg.icon} ${cfg.label}</span>
+              <span class="text-xs text-snow-300 ml-auto">${time}</span>
+            </div>
+            <h4 class="text-sm font-bold text-night leading-snug mb-1">${escapeHtml(truncate(c.title, 80))}</h4>
+            ${c.source_url ? `<a href="${escapeHtml(c.source_url)}" target="_blank" class="text-xs text-bay hover:underline">${escapeHtml(truncate(c.source_url, 40))}</a>` : ''}
+          </div>`;
+      }).join('');
+    }
+
+    // --- Actions ---
+    async function saveToCampaign(id) {
+      try {
+        const res = await fetch(`${API}/api/submissions/${id}/save-to-campaign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        if (res.ok) {
+          showToast('Saved to Campaign Builder!', 'success');
+          poll();
+        }
+      } catch (e) { showToast('Failed to save', 'error'); }
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        const res = await fetch(`${API}/api/submissions/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        });
+        if (res.ok) {
+          showToast(`Submission ${status.toLowerCase()}`, status === 'APPROVED' ? 'success' : 'info');
+          poll();
+        }
+      } catch (e) { showToast('Failed to update', 'error'); }
+    }
+
+    async function triggerDigest() {
+      try {
+        const res = await fetch(`${API}/api/digest`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        const data = await res.json();
+        if (data.status === 'sent') {
+          showToast('Weekly digest sent to manager!', 'success');
+        } else {
+          showToast(data.error || 'Failed to send digest', 'error');
+        }
+      } catch (e) { showToast('Failed to send digest', 'error'); }
+    }
+
+    // --- Filter ---
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-pill').forEach(pill => {
+        const f = pill.dataset.filter;
+        const isActive = f === filter;
+        pill.className = `filter-pill px-5 py-2 rounded-full text-sm font-bold transition-all duration-250 ${isActive ? getActiveFilterClasses(f) : 'bg-snow-100 text-snow-300 hover:bg-snow-200'}`;
+      });
+      firstLoad = true;
+      knownIds.clear();
+      fetchSubmissions();
+    }
+
+    function getActiveFilterClasses(filter) {
+      switch (filter) {
+        case 'all': return 'bg-night text-snow';
+        case 'high': return 'bg-sun-100 text-night';
+        case 'anonymous': return 'bg-gum-100 text-night';
+        case 'url': return 'bg-bay-100 text-night';
+        case 'kudos': return 'bg-success-100 text-night';
+        default: return 'bg-night text-snow';
+      }
+    }
+
+    // --- Summary toggle ---
+    function toggleSummary(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('open');
+    }
+
+    // --- Toast ---
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const colors = {
+        success: 'bg-success text-snow',
+        error: 'bg-error text-snow',
+        info: 'bg-night text-snow',
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `toast-enter ${colors[type] || colors.info} px-5 py-3 rounded-lg shadow-lg text-sm font-bold flex items-center gap-2 min-w-[250px]`;
+
+      const icons = { success: '✓', error: '✕', info: 'ℹ' };
+      toast.innerHTML = `<span>${icons[type] || icons.info}</span> ${escapeHtml(message)}`;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.remove('toast-enter');
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // --- Helpers ---
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function truncate(str, max) {
+      if (!str) return '';
+      return str.length > max ? str.slice(0, max) + '...' : str;
+    }
+
+    // --- Init ---
+    poll();
+    setInterval(poll, 4000);
+  </script>
+</body>
+</html>
