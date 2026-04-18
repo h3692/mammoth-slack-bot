@@ -2,16 +2,16 @@
 
 ***Mammoth Climate Proactive Slack Bot***
 
-**What is this? - Project Description**//
+**What is this? - Project Description**\
 This project is a demo of a potential extention onto Mammoth Climate's existing suite of Slack/Team native employee ESG management tools to transform it into a more reactive entity as opposed to a static channel updater. This project has 2 components, the first is the Slack functionality add on which allows user to ping the Mammoth bot with things like employee kudos, cool ESG articles that are relevant as well as top community initatiatives the company can participate in. The user can log these by messaging the Mammoth bot in a channel server or they can anonymously notify the bot by sending a direct message as well. Initatives that gain traction will be rewarded points and employee-driven engagement tool usage will also be logged within Mammoth's ESG profiling capacities. This connects to the second part of the demo which is a dashboard that showcases all employee driven ESG initatives. If there are any cool articles, learnings or events, an ESG leader in the company can also flag them to use in future campaigns.
 
-**Why was this built? - Core Consumer Pain Point**//
+**Why was this built? - Core Consumer Pain Point**\
 Mammoth is already a strong player in the ESG management market, however they largely rely on static tools like pushing videos, lessons and events into the chat and allowing employees to engage with them. This ignores another side of ESG management entirely which comes in terms of onus on the part of the employee. Employees who play a more active role in supporting company ESG initatives will be ones who can contribute more actively beyond just engaging with the resources that the existing Mammoth bot is pushing. Hence, there is a unique opportunity here to integrate tools that promote employee engagement from a completely new dimension by allowing users to type to the bot and communicate with it directly.
 
-**What is the solution? - @Mention Form Factor**//
+**What is the solution? - @Mention Form Factor**\
 The Mammoth bot extention enables users to integrate their own findings in a seamless way with their existing workflow on Slack. It encourages them to be more proactive in their ESG initaitives instead of being responsive towards content that is pushed directly to them. However, it does not inhibit on the primary function of the employee (which is to do work) by limiting the capacity to which they can send messages and log points to the Mammoth bot in order to preserve the core intention of this feature as a fun engagement tool as opposed to an exploit that detracts employees from the tasks and deliverables that they need to complete
 
-**How does it work? - Key Demo Functionalities**
+**How does it work? - Key Demo Functionalities**\
 
 see architecture
 
