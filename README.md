@@ -1,6 +1,15 @@
 # Mammoth — Bottom-Up ESG Scouting Module
 
-A demo MVP that flips Mammoth Climate's top-down ESG campaign model. Instead of managers creating campaigns from scratch, **employees proactively submit** ESG ideas, articles, and reports via Slack. Peers validate with emoji reactions, and managers triage the best content into campaigns from a branded web dashboard.
+***Mammoth Climate Proactive Slack Bot***
+
+**What is this? - Project Description**
+
+
+**Why was this built? - Core Consumer Pain Point**
+
+**What is the solution? - Extention Form Factor**
+
+**How does it work? - Key Demo Functionalities**
 
 ## Architecture
 
