@@ -148,19 +148,6 @@ In Slack, go to any channel and type:
 
 Visit [http://localhost:8000](http://localhost:8000)
 
-## Demo Walkthrough (Interview Script)
-
-1. **Show the empty dashboard** — clean slate, explain the concept
-2. **In Slack, tag the bot with an article**: `@Mammoth Check out this sustainability report https://example.com/esg-report`
-3. **Watch the bot reply** — confirmation message + AI-generated 3-bullet summary in thread
-4. **Switch to dashboard** — see the submission appear in real-time (within 4 seconds)
-5. **Have 2-3 colleagues react** with emoji on the Slack message
-6. **Watch "High Value"** badge appear on the dashboard when threshold is hit
-7. **DM the bot anonymously**: "The lights on the 3rd floor are left on every weekend"
-8. **Show the anonymous report** in the dashboard — no identity attached
-9. **Click "Save to Campaign"** on the validated submission — it moves to Campaigns sidebar
-10. **Click "Send Weekly Digest"** — show the Block Kit message arrive in your Slack DMs
-11. **Demonstrate rate limiting**: Submit 3 ideas rapidly, show the "save it for tomorrow" message on the 4th
 
 ## Tech Stack
 
